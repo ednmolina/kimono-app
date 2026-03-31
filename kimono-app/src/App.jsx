@@ -43,7 +43,15 @@ function createShopIcon(color){
 }
 
 function getGoogleMapsUrl(shop){
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.lat},${shop.lng}`)}`;
+  const query = [
+    shop.name,
+    shop.nameEn,
+    shop.address,
+    shop.city,
+    "Japan",
+  ].join(" ");
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 function timeToFrac(t){const[h,m]=t.split(":").map(Number);return(h+m/60-7)/16;}
