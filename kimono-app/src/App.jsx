@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
 
 const SHOPS = [
   { id: 1, name: "たんす屋福岡店", nameEn: "Tansuya Fukuoka", category: "Recycle", city: "Fukuoka", status: "active", teaCeremony: "High", priceLevel: "Budget", details: "Japan's largest recycle chain. Men's kimono, haori, kaku-obi. Accessories from ¥100.", openDays: [1,2,3,4,5,6,0], openTime: "10:00", closeTime: "19:00", address: "中央区清川1-10-9", specialty: "Monthly treasure sales", lat: 33.5783, lng: 130.3985 },
@@ -29,6 +31,16 @@ const CITIES = ["Fukuoka","Kumamoto","Nagasaki"];
 const TEA_COLORS = {"Very High":"#6B4C2A","High":"#8B6914","Medium":"#A68B5B","Low–Medium":"#BFA882","Low":"#D4C4A8"};
 const CITY_ACCENTS = {Fukuoka:"#8B4513",Kumamoto:"#556B2F",Nagasaki:"#4A6B8A"};
 const CITY_CENTERS = {Fukuoka:{lat:33.583,lng:130.395,span:0.045},Kumamoto:{lat:32.795,lng:130.720,span:0.065},Nagasaki:{lat:32.748,lng:129.877,span:0.020}};
+
+function createShopIcon(color){
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:18px;height:18px;border-radius:999px;background:${color};border:2px solid rgba(255,253,247,0.95);box-shadow:0 4px 10px rgba(0,0,0,0.18);"></div>`,
+    iconSize: [18,18],
+    iconAnchor: [9,9],
+    popupAnchor: [0,-10],
+  });
+}
 
 function timeToFrac(t){const[h,m]=t.split(":").map(Number);return(h+m/60-7)/16;}
 
@@ -72,6 +84,27 @@ function ShopCard({shop,selectedDay,index}){
   </div>);
 }
 
+function MapViewport({activeCity, plotShops}){
+  const map=useMap();
+  const center=CITY_CENTERS[activeCity];
+
+  useEffect(()=>{
+    if(plotShops.length===0){
+      map.setView([center.lat,center.lng], activeCity==="Nagasaki"?14:12);
+      return;
+    }
+
+    if(plotShops.length===1){
+      map.setView([plotShops[0].lat,plotShops[0].lng], 14);
+      return;
+    }
+
+    map.fitBounds(plotShops.map(shop=>[shop.lat,shop.lng]), { padding:[28,28] });
+  },[activeCity, center.lat, center.lng, map, plotShops]);
+
+  return null;
+}
+
 function MapView({shops,selectedDay}){
   const availableCities=CITIES.filter(ci=>shops.some(s=>s.city===ci));
   const [mapCity,setMapCity]=useState(availableCities[0]||CITIES[0]);
@@ -79,26 +112,7 @@ function MapView({shops,selectedDay}){
   const cityShops=shops.filter(s=>s.city===activeCity);
   const openShops=cityShops.filter(s=>s.openDays.includes(selectedDay)&&s.status==="active");
   const plotShops=openShops.length>0?openShops:cityShops.filter(s=>s.status==="active");
-
-  const bounds=plotShops.reduce((acc,shop)=>({
-    minLat:Math.min(acc.minLat,shop.lat),
-    maxLat:Math.max(acc.maxLat,shop.lat),
-    minLng:Math.min(acc.minLng,shop.lng),
-    maxLng:Math.max(acc.maxLng,shop.lng),
-  }),{minLat:Infinity,maxLat:-Infinity,minLng:Infinity,maxLng:-Infinity});
-
-  const latSpan=Math.max((bounds.maxLat-bounds.minLat)||0.01,0.01);
-  const lngSpan=Math.max((bounds.maxLng-bounds.minLng)||0.01,0.01);
-
-  const getPinPosition=(shop,index)=>{
-    const x=((shop.lng-bounds.minLng)/lngSpan)*76+12;
-    const y=(1-(shop.lat-bounds.minLat)/latSpan)*68+16;
-    const nudge=((index%3)-1)*2.5;
-    return{
-      left:`${Math.min(88,Math.max(12,x+nudge))}%`,
-      top:`${Math.min(84,Math.max(14,y-nudge))}%`,
-    };
-  };
+  const center=CITY_CENTERS[activeCity];
 
   return(
     <div>
@@ -127,33 +141,42 @@ function MapView({shops,selectedDay}){
           </div>
         </div>
 
-        <div style={{position:"relative",height:320,margin:12,borderRadius:12,overflow:"hidden",background:"linear-gradient(180deg,#F7F1E7 0%,#F1E7D8 100%)"}}>
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(139,125,107,0.08) 1px,transparent 1px), linear-gradient(rgba(139,125,107,0.08) 1px,transparent 1px)",backgroundSize:"20% 20%"}}/>
-          <div style={{position:"absolute",top:"14%",left:"10%",right:"12%",bottom:"16%",borderRadius:"50% 42% 48% 38% / 34% 46% 42% 50%",background:`linear-gradient(135deg, ${CITY_ACCENTS[activeCity]}18, ${CITY_ACCENTS[activeCity]}08)`,border:`1px solid ${CITY_ACCENTS[activeCity]}22`}}/>
+        <div style={{position:"relative",height:320,margin:12,borderRadius:12,overflow:"hidden",background:"#F7F1E7"}}>
+          <MapContainer center={[center.lat,center.lng]} zoom={activeCity==="Nagasaki"?14:12} style={{height:"100%",width:"100%"}} scrollWheelZoom={true}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapViewport activeCity={activeCity} plotShops={plotShops} />
+            {plotShops.map((shop,index)=>{
+              const isOpen=openShops.some(s=>s.id===shop.id);
+              return(
+                <Marker
+                  key={shop.id}
+                  position={[shop.lat,shop.lng]}
+                  icon={createShopIcon(isOpen?CITY_ACCENTS[activeCity]:"#B5A894")}
+                >
+                  <Popup>
+                    <div style={{fontFamily:"Georgia, serif",minWidth:160}}>
+                      <div style={{fontWeight:700,marginBottom:4}}>{index+1}. {shop.name}</div>
+                      <div style={{fontSize:12,marginBottom:4}}>{shop.nameEn}</div>
+                      <div style={{fontSize:12,marginBottom:4}}>{shop.address}</div>
+                      <div style={{fontSize:12,marginBottom:4}}>{shop.openTime}–{shop.closeTime}</div>
+                      <a href={`https://www.openstreetmap.org/?mlat=${shop.lat}&mlon=${shop.lng}#map=17/${shop.lat}/${shop.lng}`} target="_blank" rel="noopener noreferrer">Open in OpenStreetMap</a>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
 
-          {plotShops.map((shop,index)=>{
-            const pin=getPinPosition(shop,index);
-            const isOpen=openShops.some(s=>s.id===shop.id);
-            return(
-              <a key={shop.id} href={`https://www.openstreetmap.org/?mlat=${shop.lat}&mlon=${shop.lng}#map=17/${shop.lat}/${shop.lng}`} target="_blank" rel="noopener noreferrer"
-                style={{position:"absolute",...pin,transform:"translate(-50%,-50%)",textDecoration:"none"}}>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                  <div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:isOpen?CITY_ACCENTS[activeCity]:"#C8BDA8",color:"#FFFDF7",fontFamily:"'Lora',serif",fontSize:11,fontWeight:700,boxShadow:isOpen?"0 6px 14px rgba(0,0,0,0.16)":"0 2px 8px rgba(0,0,0,0.08)",border:"2px solid rgba(255,253,247,0.9)"}}>
-                    {index+1}
-                  </div>
-                  <div style={{width:2,height:10,background:isOpen?CITY_ACCENTS[activeCity]:"#C8BDA8",opacity:0.8}}/>
-                </div>
-              </a>
-            );
-          })}
-
-          {cityShops.length===0&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px",textAlign:"center",fontFamily:"'Lora',serif",fontSize:13,color:"#8B7D6B",fontStyle:"italic"}}>No shops match the current filters for {activeCity}.</div>}
-          {cityShops.length>0&&openShops.length===0&&<div style={{position:"absolute",left:16,right:16,bottom:14,padding:"8px 10px",borderRadius:8,background:"rgba(255,253,247,0.85)",border:"1px solid #E8DFD0",fontFamily:"'Lora',serif",fontSize:11,color:"#8B7D6B",fontStyle:"italic",textAlign:"center"}}>No shops in {activeCity} are open on {DAY_FULL[selectedDay]}. Pins show active shops for reference.</div>}
+          {cityShops.length===0&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px",textAlign:"center",fontFamily:"'Lora',serif",fontSize:13,color:"#8B7D6B",fontStyle:"italic",background:"rgba(247,241,231,0.92)",zIndex:500}}>No shops match the current filters for {activeCity}.</div>}
+          {cityShops.length>0&&openShops.length===0&&<div style={{position:"absolute",left:16,right:16,bottom:14,padding:"8px 10px",borderRadius:8,background:"rgba(255,253,247,0.9)",border:"1px solid #E8DFD0",fontFamily:"'Lora',serif",fontSize:11,color:"#8B7D6B",fontStyle:"italic",textAlign:"center",zIndex:500}}>No shops in {activeCity} are open on {DAY_FULL[selectedDay]}. Active shops are still shown on the map for reference.</div>}
         </div>
       </div>
 
       <div style={{fontSize:10,fontFamily:"'Lora',serif",color:"#A89880",textAlign:"center",marginBottom:10,fontStyle:"italic"}}>
-        Numbered pins match the currently open shops for {activeCity}. Tap a row to open the location in OpenStreetMap.
+        OpenStreetMap now shows the filtered shops for {activeCity}. Tap a marker or row to open the location in OpenStreetMap.
       </div>
 
       {openShops.length===0&&cityShops.length>0?<div style={{padding:"16px 18px",borderRadius:8,background:"#FFFDF7",border:"1px solid #E8DFD0",textAlign:"center",fontFamily:"'Lora',serif",fontSize:12,color:"#8B7D6B",fontStyle:"italic"}}>No open shops for {activeCity} on {DAY_FULL[selectedDay]}.</div>
