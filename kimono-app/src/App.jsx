@@ -3,7 +3,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 
 const SHOPS = [
-  { id: 1, name: "たんす屋福岡店", nameEn: "Tansuya Fukuoka", category: "Recycle", city: "Fukuoka", status: "active", teaCeremony: "High", priceLevel: "Budget", details: "Japan's largest recycle chain. Men's kimono, haori, kaku-obi. Accessories from ¥100.", openDays: [1,2,3,4,5,6,0], openTime: "10:00", closeTime: "19:00", address: "中央区清川1-10-9", specialty: "Monthly treasure sales", lat: 33.5783, lng: 130.3985 },
+  { id: 1, name: "たんす屋福岡店", nameEn: "Tansuya Fukuoka", category: "Recycle", city: "Fukuoka", status: "active", teaCeremony: "High", priceLevel: "Budget", details: "Japan's largest recycle chain. Men's kimono, haori, kaku-obi. Accessories from ¥100.", openDays: [1,2,3,4,5,6,0], openTime: "10:00", closeTime: "19:00", address: "中央区清川1-10-9", specialty: "Monthly treasure sales", lat: 33.5783, lng: 130.3985, mapUrl: "https://www.google.com/maps/place/Tansuya+Fukuokaten/data=!4m2!3m1!1s0x0:0xedf8796f71f8cbc9?sa=X&ved=1t:2428&ictx=111" },
   { id: 2, name: "和らく", nameEn: "Waraku", category: "Recycle", city: "Fukuoka", status: "active", teaCeremony: "High", priceLevel: "Budget", details: "Consignment recycle. Antique kimono from ¥1,575. Quarterly sales.", openDays: [1,2,3,4,5,6], openTime: "10:30", closeTime: "18:30", address: "中央区渡辺通1-1-1 サンセルコ1F", specialty: "Consignment; quarterly blowout sales", lat: 33.5845, lng: 130.4042 },
   { id: 3, name: "あやみ", nameEn: "Ayami", category: "Recycle/Bespoke", city: "Fukuoka", status: "active", teaCeremony: "Very High", priceLevel: "Budget–Mid", details: "Recycle + bespoke from bolt. Best for non-standard sizing.", openDays: [1,2,3,4,5,6], openTime: "10:00", closeTime: "18:00", address: "中央区渡辺通1-1-1 サンセルコ", specialty: "Custom tailoring; non-JP sizing", lat: 33.5846, lng: 130.4043 },
   { id: 4, name: "壱萬屋", nameEn: "Ichimanya", category: "Recycle", city: "Fukuoka", status: "active", teaCeremony: "Medium", priceLevel: "Budget", details: "40+ yrs expertise. Men's from ¥1,000. Fri–Sun only.", openDays: [5,6,0], openTime: "11:00", closeTime: "17:00", address: "Fukuoka city", specialty: "Open Fri–Sun only; lessons", lat: 33.5890, lng: 130.3780 },
@@ -22,15 +22,16 @@ const SHOPS = [
   { id: 17, name: "きものやまと長崎", nameEn: "Kimono Yamato NG", category: "Chain/New", city: "Nagasaki", status: "active", teaCeremony: "High", priceLevel: "Mid–High", details: "Y.&SONS men's brand. Professional fitting.", openDays: [1,2,3,4,5,6,0], openTime: "10:00", closeTime: "21:00", address: "元船町10-1 夢彩都2F", specialty: "Y.&SONS; kitsuke lessons", lat: 32.7530, lng: 129.8720 },
   { id: 18, name: "ヒラコバ", nameEn: "HIRAKOBA", category: "Recycle/Multi", city: "Nagasaki", status: "active", teaCeremony: "Low–Medium", priceLevel: "Budget", details: "Multi-category recycle in arcade. Open daily.", openDays: [1,2,3,4,5,6,0], openTime: "10:00", closeTime: "19:00", address: "浜町10-11 1F", specialty: "Multi-category; arcade", lat: 32.7440, lng: 129.8790 },
   { id: 19, name: "わらく(長崎)", nameEn: "Waraku Nagasaki", category: "Traditional/New", city: "Nagasaki", status: "inactive", teaCeremony: "Low", priceLevel: "Mid-range", details: "Primarily women's. Very limited men's.", openDays: [1,2,3,4,5,6,0], openTime: "10:00", closeTime: "19:00", address: "浜町2-17", specialty: "Women's focus", lat: 32.7448, lng: 129.8778 },
+  { id: 20, name: "黒川温泉 湯旅屋 黒川堂", nameEn: "Kurokawa Onsen Yutabiya Kurokawado", category: "Onsen Wear/Souvenir", city: "Kurokawa", status: "active", teaCeremony: "Low", priceLevel: "Mid-range", details: "Official Kurokawa Onsen onsen-style shop. Best for samue, monpe, setta/geta, and onsen-street wear rather than formal kimono.", openDays: [1,2,3,4,5,6,0], openTime: "09:30", closeTime: "17:30", address: "阿蘇郡南小国町萬願寺6592-2", specialty: "Samue, monpe, geta, and premium bath accessories", lat: 33.0772, lng: 131.1432 },
 ];
 
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const DAY_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const CATEGORIES = [...new Set(SHOPS.map(s => s.category))];
-const CITIES = ["Fukuoka","Kumamoto","Nagasaki"];
+const CITIES = ["Fukuoka","Kumamoto","Nagasaki","Kurokawa"];
 const TEA_COLORS = {"Very High":"#6B4C2A","High":"#8B6914","Medium":"#A68B5B","Low–Medium":"#BFA882","Low":"#D4C4A8"};
-const CITY_ACCENTS = {Fukuoka:"#8B4513",Kumamoto:"#556B2F",Nagasaki:"#4A6B8A"};
-const CITY_CENTERS = {Fukuoka:{lat:33.583,lng:130.395,span:0.045},Kumamoto:{lat:32.795,lng:130.720,span:0.065},Nagasaki:{lat:32.748,lng:129.877,span:0.020}};
+const CITY_ACCENTS = {Fukuoka:"#8B4513",Kumamoto:"#556B2F",Nagasaki:"#4A6B8A",Kurokawa:"#7A5C3E"};
+const CITY_CENTERS = {Fukuoka:{lat:33.583,lng:130.395,span:0.045},Kumamoto:{lat:32.795,lng:130.720,span:0.065},Nagasaki:{lat:32.748,lng:129.877,span:0.020},Kurokawa:{lat:33.0772,lng:131.1432,span:0.012}};
 
 function createShopIcon(color){
   return L.divIcon({
@@ -43,7 +44,9 @@ function createShopIcon(color){
 }
 
 function getGoogleMapsUrl(shop){
-  const placeQuery = [
+  if(shop.mapUrl) return shop.mapUrl;
+
+  const searchQuery = [
     shop.nameEn || shop.name,
     shop.name,
     shop.address,
@@ -51,7 +54,7 @@ function getGoogleMapsUrl(shop){
     "Japan",
   ].join(" ");
 
-  return `https://www.google.com/maps/place/${encodeURIComponent(placeQuery)}/@${shop.lat},${shop.lng},17z`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
 }
 
 function timeToFrac(t){const[h,m]=t.split(":").map(Number);return(h+m/60-7)/16;}
