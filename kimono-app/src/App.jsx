@@ -42,6 +42,10 @@ function createShopIcon(color){
   });
 }
 
+function getGoogleMapsUrl(shop){
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.lat},${shop.lng}`)}`;
+}
+
 function timeToFrac(t){const[h,m]=t.split(":").map(Number);return(h+m/60-7)/16;}
 
 function TimeBar({openTime,closeTime,isOpen}){
@@ -158,11 +162,11 @@ function MapView({shops,selectedDay}){
                 >
                   <Popup>
                     <div style={{fontFamily:"Georgia, serif",minWidth:160}}>
-                      <div style={{fontWeight:700,marginBottom:4}}>{index+1}. {shop.name}</div>
+                    <div style={{fontWeight:700,marginBottom:4}}>{index+1}. {shop.name}</div>
                       <div style={{fontSize:12,marginBottom:4}}>{shop.nameEn}</div>
                       <div style={{fontSize:12,marginBottom:4}}>{shop.address}</div>
                       <div style={{fontSize:12,marginBottom:4}}>{shop.openTime}–{shop.closeTime}</div>
-                      <a href={`https://www.openstreetmap.org/?mlat=${shop.lat}&mlon=${shop.lng}#map=17/${shop.lat}/${shop.lng}`} target="_blank" rel="noopener noreferrer">Open in OpenStreetMap</a>
+                      <a href={getGoogleMapsUrl(shop)} target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
                     </div>
                   </Popup>
                 </Marker>
@@ -176,12 +180,12 @@ function MapView({shops,selectedDay}){
       </div>
 
       <div style={{fontSize:10,fontFamily:"'Lora',serif",color:"#A89880",textAlign:"center",marginBottom:10,fontStyle:"italic"}}>
-        OpenStreetMap now shows the filtered shops for {activeCity}. Tap a marker or row to open the location in OpenStreetMap.
+        OpenStreetMap now shows the filtered shops for {activeCity}. Tap a marker or row to open the location in Google Maps.
       </div>
 
       {openShops.length===0&&cityShops.length>0?<div style={{padding:"16px 18px",borderRadius:8,background:"#FFFDF7",border:"1px solid #E8DFD0",textAlign:"center",fontFamily:"'Lora',serif",fontSize:12,color:"#8B7D6B",fontStyle:"italic"}}>No open shops for {activeCity} on {DAY_FULL[selectedDay]}.</div>
       :openShops.map((shop,index)=>(
-        <a key={shop.id} href={`https://www.openstreetmap.org/?mlat=${shop.lat}&mlon=${shop.lng}#map=17/${shop.lat}/${shop.lng}`} target="_blank" rel="noopener noreferrer"
+        <a key={shop.id} href={getGoogleMapsUrl(shop)} target="_blank" rel="noopener noreferrer"
           style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:6,background:"#FFFDF7",border:"1px solid #E8DFD0",marginBottom:6,textDecoration:"none",transition:"all 0.2s"}}>
           <div style={{width:24,height:24,borderRadius:"50%",background:CITY_ACCENTS[activeCity],color:"#FFFDF7",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Lora',serif",fontSize:11,fontWeight:700,flexShrink:0}}>{index+1}</div>
           <div style={{flex:1,minWidth:0}}>
@@ -216,10 +220,14 @@ function TimelineView({shops,selectedDay}){
     return(
       <div style={{position:"relative",height:h}}>
         <div style={{position:"absolute",top:"50%",left:0,right:0,height:1,background:"#E8DFD0",transform:"translateY(-50%)"}}/>
-        <div style={{position:"absolute",top:Math.floor((h-Math.min(h,24))/2),left:`${l}%`,width:`${r-l}%`,height:Math.min(h,24),borderRadius:5,background:isOpen?`linear-gradient(90deg,${CITY_ACCENTS[shop.city]}DD,${CITY_ACCENTS[shop.city]}99)`:"#C8BDA8",display:"flex",alignItems:"center",paddingLeft:6,overflow:"hidden",cursor:"default"}}
-          title={shop.nameEn+": "+shop.openTime+"–"+shop.closeTime}>
+        <a
+          href={getGoogleMapsUrl(shop)}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{position:"absolute",top:Math.floor((h-Math.min(h,24))/2),left:`${l}%`,width:`${r-l}%`,height:Math.min(h,24),borderRadius:5,background:isOpen?`linear-gradient(90deg,${CITY_ACCENTS[shop.city]}DD,${CITY_ACCENTS[shop.city]}99)`:"#C8BDA8",display:"flex",alignItems:"center",paddingLeft:6,overflow:"hidden",cursor:"pointer",textDecoration:"none"}}
+          title={shop.nameEn+": "+shop.openTime+"–"+shop.closeTime+" • Open in Google Maps"}>
           <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:isOpen?11:10,fontWeight:700,color:isOpen?"#FFFDF7":"#8B7D6B",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textShadow:isOpen?"0 1px 2px rgba(0,0,0,0.3)":"none"}}>{shop.name}</span>
-        </div>
+        </a>
       </div>
     );
   };
