@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 
 const SHOPS = [
@@ -124,6 +124,19 @@ function MapView({shops,selectedDay}){
   const availableCities=CITIES.filter(ci=>shops.some(s=>s.city===ci));
   const [mapCity,setMapCity]=useState(availableCities[0]||CITIES[0]);
   const activeCity=availableCities.includes(mapCity)?mapCity:(availableCities[0]||CITIES[0]);
+  const [userLocation,setUserLocation]=useState(null);
+  const [locating,setLocating]=useState(false);
+  const [locateError,setLocateError]=useState(false);
+
+  function locateMe(){
+    if(!navigator.geolocation) return;
+    setLocating(true);
+    setLocateError(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{setUserLocation({lat:pos.coords.latitude,lng:pos.coords.longitude});setLocating(false);},
+      ()=>{setLocating(false);setLocateError(true);}
+    );
+  }
   const cityShops=shops.filter(s=>s.city===activeCity);
   const openShops=cityShops.filter(s=>s.openDays.includes(selectedDay)&&s.status==="active");
   const plotShops=openShops.length>0?openShops:cityShops.filter(s=>s.status==="active");
@@ -150,9 +163,16 @@ function MapView({shops,selectedDay}){
             <div style={{fontSize:10,letterSpacing:"0.14em",textTransform:"uppercase",color:"#8B7D6B",fontWeight:600}}>Map Layout</div>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:"#3B2F1E"}}>{activeCity}</div>
           </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontSize:22,fontFamily:"'Cormorant Garamond',serif",fontWeight:700,color:CITY_ACCENTS[activeCity]}}>{openShops.length}</div>
-            <div style={{fontSize:10,fontFamily:"'Lora',serif",color:"#8B7D6B"}}>open on {DAY_NAMES[selectedDay]}</div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:22,fontFamily:"'Cormorant Garamond',serif",fontWeight:700,color:CITY_ACCENTS[activeCity]}}>{openShops.length}</div>
+              <div style={{fontSize:10,fontFamily:"'Lora',serif",color:"#8B7D6B"}}>open on {DAY_NAMES[selectedDay]}</div>
+            </div>
+            <button onClick={locateMe} disabled={locating}
+              style={{padding:"5px 10px",borderRadius:6,border:"1.5px solid #4A6FA5",background:userLocation?"#4A6FA5":"transparent",color:userLocation?"#FFFDF7":"#4A6FA5",fontFamily:"'Lora',serif",fontSize:10,fontWeight:600,cursor:"pointer",opacity:locating?0.6:1,transition:"all 0.2s",whiteSpace:"nowrap"}}>
+              {locating?"Locating…":userLocation?"📍 Located":"📍 Locate Me"}
+            </button>
+            {locateError&&<div style={{fontSize:9,fontFamily:"'Lora',serif",color:"#A05050",fontStyle:"italic"}}>Location unavailable</div>}
           </div>
         </div>
 
@@ -183,6 +203,11 @@ function MapView({shops,selectedDay}){
                 </Marker>
               );
             })}
+            {userLocation&&(
+              <CircleMarker center={[userLocation.lat,userLocation.lng]} radius={9} pathOptions={{color:"#2563EB",fillColor:"#3B82F6",fillOpacity:0.9,weight:2.5}}>
+                <Popup><div style={{fontFamily:"Georgia,serif",fontSize:12}}>Your location</div></Popup>
+              </CircleMarker>
+            )}
           </MapContainer>
 
           {cityShops.length===0&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px",textAlign:"center",fontFamily:"'Lora',serif",fontSize:13,color:"#8B7D6B",fontStyle:"italic",background:"rgba(247,241,231,0.92)",zIndex:500}}>No shops match the current filters for {activeCity}.</div>}
